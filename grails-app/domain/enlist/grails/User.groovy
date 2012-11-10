@@ -1,5 +1,8 @@
 package enlist.grails
 
+import org.apache.commons.lang.StringUtils
+import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
+
 class User {
 
     transient springSecurityService     //SpringSecurityService
@@ -20,10 +23,17 @@ class User {
     boolean accountExpired = false
     boolean accountLocked = false
     boolean passwordExpired = false
+
+    Integer currPoints = 0
 	
 	static belongsTo = [chapter: Chapter]
 	
 	static embedded = ['address']
+
+    static searchable = {
+        firstName index : "analyzed"
+        lastName index : "analyzed"
+    }
 
     static constraints = {
         username(blank: false
@@ -31,8 +41,9 @@ class User {
 			, size: 3..12
 			, matches: '[0-9a-zA-Z]{3,12}'
 		)
-        password(blank: false
-			, validator: { pwd, user -> return pwd != user.username }
+        password(blank: false, password: true, validator: { pwd, user ->
+				return pwd != user.username
+			}
 		)
         enabled(default: true, blank: false)
         accountExpired(default: false, blank: false)
@@ -59,6 +70,17 @@ class User {
     Set<Role> getAuthorities() {
         UserRole.findAllBySecUser(this).collect { it.secRole } as Set
     }
+    // might as well create similar method for other Role. if the role is dynamic, we can move this to bootstrap (meta programming)
+    boolean checkVolunteer() {
+		Set<Role> roles = authorities
+		for(Role role : roles) if(StringUtils.equals(role.authority, Role.VOLUNTEER)) return true
+        return false
+    }
+	
+    boolean checkAdmin() {
+        return SpringSecurityUtils.ifAnyGranted("ROLE_ADMIN,ROLE_CHAPTER_ADMIN,ROLE_ACTIVITY_COORDINATOR")
+    }
+	
 
     def beforeInsert() {
         encodePassword()

@@ -1,4 +1,4 @@
-<%@ page import="enlist.grails.Activity" %>
+<%@ page import="enlist.grails.util.DateParser; enlist.grails.Role; enlist.grails.Activity" %>
 
 <div class="control-group ${hasErrors(bean: activityInstance, field: 'event', 'error')} required">
 	<label for="event" class="control-label">
@@ -24,7 +24,13 @@
 	</label>
 	<div class="controls">
 		<g:textField name="location" value="${activityInstance?.location}"/>
+        <button type="button" class="btn" data-toggle="collapse" data-target="#user-location-address">
+            Fill in Address
+        </button>
 	</div>
+</div>
+<div id="user-location-address" class="collapse">
+    <f:field bean="activityInstance" property="locationAddress"/>
 </div>
 
 <div class="control-group ${hasErrors(bean: activityInstance, field: 'description', 'error')} required">
@@ -41,7 +47,7 @@
 		<g:message code="activity.coordinators.label" default="Coordinators" />
 	</label>
 	<div class="controls">
-		<g:select name="coordinators" from="${enlist.grails.User.list()}" multiple="multiple" optionKey="id" size="5" value="${activityInstance?.coordinators*.id}" class="many-to-many"/>
+		<g:select name="coordinators" from="${enlist.grails.UserRole.findAllByAuthority(Role.ACTIVITY_COORDINATOR)}" multiple="multiple" optionKey="id" size="5" value="${activityInstance?.coordinators*.id}" class="many-to-many"/>
 	</div>
 </div>
 
@@ -50,12 +56,13 @@
 		<g:message code="activity.startDate.label" default="Start Date" />
 	</label>
 	<div class="controls">
-		<div class="input-append date datepicker" data-date="${activityInstance?.startDate}" data-date-format="mm/dd/yyyy">
-			<input name="_startDate" class="span8" size="16" type="text" value="${activityInstance?.startDate}" />
+        <g:hiddenField name="startDate" value="struct" />
+		<div class="input-append date datepicker" data-date="${DateParser.printDefault(activityInstance?.startDate)}" data-date-format="mm/dd/yyyy">
+			<input name="startDate_date" class="span8" size="16" type="text" value="${DateParser.printDefault(activityInstance?.startDate)}" />
 			<span class="add-on"><i class="icon-th"></i></span>
 		</div>
 		<div class="input-append bootstrap-timepicker-component">
-		    <input name="_startTime" type="text" class="timepicker-default input-small">
+		    <input name="startDate_time" type="text" class="timepicker-default input-small">
 		    <span class="add-on">
 		    	<i class="icon-time"></i>
 		    </span>
@@ -68,12 +75,13 @@
 		<g:message code="activity.endDate.label" default="End Date" />
 	</label>
 	<div class="controls">
-		<div class="input-append date datepicker" data-date="${activityInstance?.endDate}" data-date-format="mm/dd/yyyy">
-			<input name="_endDate" class="span8" size="16" type="text" value="${activityInstance?.endDate}" />
+        <g:hiddenField name="endDate" value="struct" />
+		<div class="input-append date datepicker" data-date="${DateParser.printDefault(activityInstance?.endDate)}" data-date-format="mm/dd/yyyy">
+			<input name="endDate_date" class="span8" size="16" type="text" value="${DateParser.printDefault(activityInstance?.endDate)}" />
 			<span class="add-on"><i class="icon-th"></i></span>
 		</div>
 		<div class="input-append bootstrap-timepicker-component">
-		    <input name="_endTime" type="text" class="timepicker-default input-small">
+		    <input name="endDate_time" type="text" class="timepicker-default input-small">
 		    <span class="add-on">
 		    	<i class="icon-time"></i>
 		    </span>
@@ -117,4 +125,20 @@
 	$('.datepicker').datepicker();
 	/* TODO: Auto-populate the end date with the same date */
 	/* TODO: Auto-populate the end time with the same time + 1 hour */
+    var requiredEmbeddedField= "req-emb";
+    var $embeddedView = $('#user-location-address');
+    var isInitiallyShown = $embeddedView.hasClass("in");
+    $embeddedView.find(":input[required]").each(function(){
+        $(this).addClass(requiredEmbeddedField)
+        if(isInitiallyShown == false) $(this).removeAttr("required");
+    });
+    $embeddedView.on('hidden', function () {
+        $embeddedView.find("."+requiredEmbeddedField).each(function(){
+            $(this).removeAttr("required");
+        })
+    }).on('shown', function () {
+        $embeddedView.find("."+requiredEmbeddedField).each(function(){
+            $(this).attr("required", "required");
+        })
+    });
 </script>
